@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <!-- 避免转码 -->
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <!-- <link rel="shortcut icon" type="image/ico" href="/favicon.ico"/> -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- 忽略数字自动识别为电话号码 -->
+    <meta content="telephone=no" name="format-detection" />
+    <!-- 忽略识别邮箱 -->
+    <meta content="email=no" name="format-detection" />
+    <!-- 针对手持设备优化，主要是针对一些老的不识别viewport的浏览器，比如黑莓 -->
+    <meta name="HandheldFriendly" content="true">
+    <!-- windows phone 点击无高光 -->
+    <meta name="msapplication-tap-highlight" content="no">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+    <div id="chartContainer" style="height: 90%; width: 90%; position: absolute;margin-left:5%">
+        <canvas id="myChart"></canvas>
+    </div>
+    <script src="js/lib/jquery.min.js"></script>
+    <script src="js/main.js"></script>
+    <script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js'></script>
+    <script type="text/javascript">
+    var ctx = document.getElementById("myChart");
+
+
+    Chart.pluginService.register({
+        beforeRender: function(chart) {
+            if (chart.config.options.showAllTooltips) {
+                // create an array of tooltips
+                // we can't use the chart tooltip because there is only one tooltip per chart
+                chart.pluginTooltips = [];
+                chart.config.data.datasets.forEach(function(dataset, i) {
+                    chart.getDatasetMeta(i).data.forEach(function(sector, j) {
+                        chart.pluginTooltips.push(new Chart.Tooltip({
+                            _chart: chart.chart,
+                            _chartInstance: chart,
+                            _data: chart.data,
+                            _options: chart.options.tooltips,
+                            _active: [sector]
+                        }, chart));
+                    });
+                });
+
+                // turn off normal tooltips
+                chart.options.tooltips.enabled = false;
+            }
+        },
+        afterDraw: function(chart, easing) {
+            if (chart.config.options.showAllTooltips) {
+                // we don't want the permanent tooltips to animate, so don't do anything till the animation runs atleast once
+                // if (!chart.allTooltipsOnce) {
+                //     if (easing !== 1)
+                //         return;
+                //     chart.allTooltipsOnce = true;
+                // }
+                chart.allTooltipsOnce = true;
+
+                // turn on tooltips
+                chart.options.tooltips.enabled = true;
+                Chart.helpers.each(chart.pluginTooltips, function(tooltip) {
+                    tooltip.initialize();
+                    tooltip.update();
+                    // we don't actually need this since we are not animating tooltips
+                    tooltip.pivot();
+                    tooltip.transition(easing).draw();
+                });
+                chart.options.tooltips.enabled = false;
+            }
+        }
+    });
+    var myChart = new Chart(ctx, {
+        type: 'horizontalBar',
+
+        data: {
+            // labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+            // datasets: [{
+            //     label: '123',
+            //     data: [1, 1, 1, 1, 1, 1],
+            //     backgroundColor: [
+            //         'rgba(255, 99, 132, 1)',
+            //         'rgba(54, 162, 235, 1)',
+            //         'rgba(255, 206, 86, 1)',
+            //         'rgba(75, 192, 192, 1)',
+            //         'rgba(153, 102, 255, 1)',
+            //         'rgba(255, 159, 64, 1)'
+            //     ]
+            // }]
+            labels: [],
+            datasets: [{
+                label: '123',
+                data: [],
+                backgroundColor: [
+                   
+                ]
+            }]
+        },
+        options: {
+            title: {
+                display: true,
+                fontSize: 18,
+                text: '可视化数据'
+            },
+            legend: {
+                display: false,
+                labels: {
+                    fontColor: 'rgb(255, 99, 132)'
+                }
+            },
+            tooltips: {
+                yAlign: 'left',
+                xAlign: 'left',
+                callbacks: {
+                    title: function(tooltipItem, data) {
+                        return data['labels'][tooltipItem[0]['index']];
+                    },
+                    label: function(tooltipItem, data) {
+                        return data['datasets'][0]['data'][tooltipItem['index']];
+                    },
+                },
+                backgroundColor: 'rgba(0,0,0,0)',
+                titleFontSize: 16,
+                titleFontColor: '#0066ff',
+                bodyFontColor: '#000',
+                bodyFontSize: 14,
+                displayColors: false
+            },
+            showAllTooltips: true,
+            animation: {
+                duration: 3000,
+                // easing: 'easeOutElastic'
+
+            },
+            scales: {
+                xAxes: [{
+                    ticks: {
+                        min: 0,
+                         // stepSize: 50
+                        // max: 100
+                    }
+                }]
+            }
+        }
+    });
+
+    var count;
+    var Vehicles = [
+        { data: 12, Brand: "Red", backgroundColor: "rgba(255, 99, 132, 1)" },
+        { data: 3, Brand: "Blue", backgroundColor: "rgba(54, 162, 235, 1)" },
+        { data: 5, Brand: "Yellow", backgroundColor: "rgba(255, 206, 86, 1)" },
+        { data: 53, Brand: "Green", backgroundColor: "rgba(75, 192, 192, 1)" },
+        { data: 12, Brand: "Purple", backgroundColor: "rgba(153, 102, 255, 1)" },
+        { data: 53, Brand: "Orange", backgroundColor: "rgba(255, 159, 64, 1)" },
+    ];
+    //         data[i] += Math.floor(Math.random() * 10)
+
+    setInterval(function() {
+        Vehicles.sort(sortNum)
+        var data = myChart.data.datasets[0].data;
+        var labels = myChart.data.labels;
+        var backgroundColor = myChart.data.datasets[0].backgroundColor;
+
+        for (var i = 0; i < Vehicles.length; i++) {
+            data[i] = Vehicles[i].data
+            labels[i] = Vehicles[i].Brand
+            backgroundColor[i] = Vehicles[i].backgroundColor
+            Vehicles[i].data += Math.floor(Math.random() * 10)
+        }
+        // myChart.scales['x-axis-0'].max = 1000
+        // console.log(myChart.scales['x-axis-0'])
+        myChart.update();
+    }, 1000)
+    
+
+    function sortNum(a, b) {
+        return b.data - a.data; //升序，如降序，把“a - b”该成“b - a”
+    }
+    </script>
+</body>
+
+</html>
